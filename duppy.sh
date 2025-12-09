@@ -200,12 +200,29 @@ ensure_command() {
 install_python_module() {
     local module=$1
     log_info "Installing python module ${module}"
-    if "$PYTHON_BIN" -m pip install "$module" > /dev/null 2>&1; then
+    set +e
+    "$PYTHON_BIN" -m pip install "$module" > /dev/null 2>&1
+    local rc=$?
+    set -e
+    if [ "$rc" -eq 0 ]; then
         log_info "${module} installed"
-    else
-        log_error "Unable to install python module ${module}"
-        exit 1
+        return
     fi
+
+    log_warn "Install failed (exit ${rc}). Upgrading pip/setuptools/wheel and retrying."
+    set +e
+    "$PYTHON_BIN" -m pip install --upgrade pip setuptools wheel > /dev/null 2>&1
+    local uprc=$?
+    "$PYTHON_BIN" -m pip install "$module" > /dev/null 2>&1
+    rc=$?
+    set -e
+    if [ "$rc" -eq 0 ]; then
+        log_info "${module} installed after upgrading pip/setuptools/wheel"
+        return
+    fi
+
+    log_error "Unable to install python module ${module} (pip exit ${rc}, upgrade exit ${uprc})"
+    exit 1
 }
 
 bootstrap_pip_with_get_pip() {
