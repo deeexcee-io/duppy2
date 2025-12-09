@@ -262,8 +262,14 @@ ensure_virtualenv() {
     if python3 -m venv "$VENV_DIR" > /dev/null 2>&1; then
         log_info "Virtual environment created"
     else
-        log_error "Unable to create python virtual environment"
-        exit 1
+        log_warn "python3 -m venv failed; installing python3-venv and retrying"
+        install_apt_package python3-venv
+        if python3 -m venv "$VENV_DIR" > /dev/null 2>&1; then
+            log_info "Virtual environment created after installing python3-venv"
+        else
+            log_error "Unable to create python virtual environment"
+            exit 1
+        fi
     fi
 
     ensure_pip_in_venv
@@ -388,7 +394,10 @@ ensure_base_dependencies() {
         log_warn "python3-pip not found. Installing."
         install_apt_package python3-pip
     fi
-    if ! python3 -m venv --help > /dev/null 2>&1; then
+    if ! python3 -c "import ensurepip" > /dev/null 2>&1; then
+        log_warn "python3-venv (ensurepip) not found. Installing."
+        install_apt_package python3-venv
+    elif ! python3 -m venv --help > /dev/null 2>&1; then
         log_warn "python3-venv not found. Installing."
         install_apt_package python3-venv
     fi
