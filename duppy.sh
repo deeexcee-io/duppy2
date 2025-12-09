@@ -292,6 +292,15 @@ ensure_virtualenv() {
     ensure_pip_in_venv
 }
 
+upgrade_pip_toolchain() {
+    log_info "Upgrading pip/setuptools/wheel in virtual environment"
+    if "$PYTHON_BIN" -m pip install --upgrade pip setuptools wheel > /dev/null 2>&1; then
+        log_info "pip toolchain upgraded"
+    else
+        log_warn "Unable to upgrade pip toolchain; continuing with existing versions"
+    fi
+}
+
 ensure_tls_certificate() {
     if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
         log_info "Using existing TLS certificate (${CERT_FILE})"
@@ -586,6 +595,7 @@ main() {
     choose_run_mode
     ensure_base_dependencies
     ensure_virtualenv
+    upgrade_pip_toolchain
     ensure_flask
     ensure_gunicorn
     resolve_project_dir
